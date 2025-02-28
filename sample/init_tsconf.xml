@@ -1,0 +1,25 @@
+<timeseries date="2024-02-05T16:59:59+09:00" version="1.0">
+    <tracksource sample-type="Discontinuous Rate" source-url="D:/ELAN Test/20240205/102.001.C.csv" time-column="0">
+        <property key="provider" value="mpi.eudico.client.annotator.timeseries.csv.CSVServiceProvider" />
+        <track derivative="0" name="ang">
+            <property key="detect-range" value="true" />
+            <sample-position>
+                <pos col="2" row="0" />
+            </sample-position>
+            <description />
+            <units />
+            <range max="1.0" min="0.0" />
+            <color>255,0,51</color>
+        </track>
+        <track derivative="0" name="disp">
+            <property key="detect-range" value="true" />
+            <sample-position>
+                <pos col="1" row="0" />
+            </sample-position>
+            <description />
+            <units />
+            <range max="1.0" min="0.0" />
+            <color>0,255,0</color>
+        </track>
+    </tracksource>
+</timeseries>

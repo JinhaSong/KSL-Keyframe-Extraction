@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<preferences version="1.1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.mpi.nl/tools/elan/Prefs_v1.1.xsd">
+    <pref key="FrameSize">
+        <Object class="java.awt.Dimension">2560,1400</Object>
+    </pref>
+    <prefList key="TimeSeriesViewer.Panel-2">
+        <String>ang</String>
+    </prefList>
+    <pref key="LayoutManager.SelectedTabIndex">
+        <Int>7</Int>
+    </pref>
+    <pref key="LayoutManager.VisibleMultiTierViewer">
+        <String>mpi.eudico.client.annotator.viewer.TimeLineViewer</String>
+    </pref>
+    <prefList key="TimeSeriesViewer.Panel-1">
+        <String>disp</String>
+    </prefList>
+    <pref key="MultiTierViewer.ActiveTierName">
+        <String>Change Points</String>
+    </pref>
+    <pref key="LayoutManager.MediaAreaHeight">
+        <Int>469</Int>
+    </pref>
+    <pref key="SelectionEndTime">
+        <Long>2233</Long>
+    </pref>
+    <pref key="LayoutManager.CurrentMode">
+        <Int>1</Int>
+    </pref>
+    <prefGroup key="CommentViewer.Columns">
+        <pref key="받는 사람">
+            <Int>0</Int>
+        </pref>
+        <pref key="수정 날짜">
+            <Int>75</Int>
+        </pref>
+        <pref key="코멘트">
+            <Int>75</Int>
+        </pref>
+        <pref key="보내는 사람">
+            <Int>0</Int>
+        </pref>
+        <pref key="종료 시간">
+            <Int>75</Int>
+        </pref>
+        <pref key="스레드">
+            <Int>75</Int>
+        </pref>
+        <pref key="이니셜">
+            <Int>75</Int>
+        </pref>
+        <pref key="층렬">
+            <Int>75</Int>
+        </pref>
+        <pref key="만든 날짜">
+            <Int>75</Int>
+        </pref>
+        <pref key="시작 시간">
+            <Int>75</Int>
+        </pref>
+    </prefGroup>
+    <prefList key="CommentViewer.Columns.Order">
+        <String>시작 시간</String>
+        <String>종료 시간</String>
+        <String>층렬</String>
+        <String>이니셜</String>
+        <String>코멘트</String>
+        <String>스레드</String>
+        <String>보내는 사람</String>
+        <String>받는 사람</String>
+        <String>만든 날짜</String>
+        <String>수정 날짜</String>
+    </prefList>
+    <pref key="ActiveRecognizerName">
+        <String>BAS - WebMAUS Basic</String>
+    </pref>
+    <pref key="FrameLocation">
+        <Object class="java.awt.Point">0,0</Object>
+    </pref>
+    <pref key="TimeLineViewer.ZoomLevel">
+        <Float>310.0</Float>
+    </pref>
+    <pref key="SelectionBeginTime">
+        <Long>2173</Long>
+    </pref>
+    <prefGroup key="BAS - WebMAUS Basic">
+        <pref key="LANGUAGE">
+            <String>deu-DE</String>
+        </pref>
+        <prefGroup key="TierUrl"/>
+        <pref key="SignalParamName">
+            <String>SIGNAL</String>
+        </pref>
+        <pref key="ServiceName">
+            <String>runMAUSBasic</String>
+        </pref>
+        <pref key="TextParamName">
+            <String>TEXT</String>
+        </pref>
+    </prefGroup>
+    <pref key="TimeSeriesViewer.NumberOfPanels">
+        <Int>2</Int>
+    </pref>
+    <pref key="TimeScaleBeginTime">
+        <Long>0</Long>
+    </pref>
+    <pref key="MediaTime">
+        <Long>1619</Long>
+    </pref>
+    <prefGroup key="TierColors">
+        <pref key="Key Frames">
+            <Object class="java.awt.Color">0,90,0</Object>
+        </pref>
+        <pref key="Change Points">
+            <Object class="java.awt.Color">0,90,160</Object>
+        </pref>
+    </prefGroup>
+    <prefList key="MultiTierViewer.TierOrder">
+        <String>Change Points</String>
+        <String>Key Frames</String>
+    </prefList>
+    <pref key="LayoutManager.SplitPaneDividerLocation">
+        <Int>373</Int>
+    </pref>
+    <prefList key="CommentViewer.Columns.Hidden">
+        <String>받는 사람</String>
+        <String>보내는 사람</String>
+    </prefList>
+</preferences>
