@@ -1,10 +1,9 @@
 import numpy as np
 import scipy.ndimage
 import json
-from scipy.signal import argrelmin, argrelmax
+from scipy.signal import argrelmin, argrelmax, savgol_filter
 
-from util.file import save_data_csv, open_json
-
+from util.file import open_json
 
 def min_max_norm_list(dataset):
     norm_list = list()
@@ -23,51 +22,6 @@ def min_max_norm(data):
 def cast_list(test_list, data_type):
     return list(map(data_type, test_list))
 
-def extract_changepoint(json_path, min_thres=0.35, minor_thres=0.1, adj_local_thres=15, disp_sigma=1.0, acc_sigma=1.0, minor_max_thres=0.2, ang_acc_thres=2, pose_type="azure_kinect") :
-    r_handtip, l_handtip = get_handtip_joint_data(json_path)
-    strong_cp, weak_cp, handtip_disp, handtip_disp_gauss_filtered, norm_handtip_disp, ang_acc_orin, ang_vel, ang_acc_disp_gauss_filtered, ang_acc_local_max, norm_ang_acc = changepoint_detector(
-        r_handtip,
-        min_thres,
-        minor_thres,
-        adj_local_thres,
-        disp_sigma,
-        acc_sigma,
-        minor_max_thres,
-        ang_acc_thres,
-        pose_type=pose_type
-    )
-    if pose_type=="blazepose":
-        data = open_json(json_path)
-        timeline = get_timeline_from_frameid(data)
-
-        time_disp = [list(x) for x in list(zip(timeline, ang_vel, ang_acc_orin))]
-    else:
-        data = open_json(json_path)
-        timeline = get_timeline_zero_start(data)
-
-        time_disp = [list(x) for x in list(zip(timeline, norm_handtip_disp, norm_ang_acc))]
-
-
-    metadata = {
-        'timeline': timeline,
-        'time_disp': time_disp,
-        'strong_cp': strong_cp,
-        'weak_cp': weak_cp,
-        'handtip_disp': handtip_disp,
-        'handtip_disp_gauss_filtered': handtip_disp_gauss_filtered,
-        'ang_acc_orin': ang_acc_orin,
-        'ang_acc_disp_gauss_filtered': ang_acc_disp_gauss_filtered,
-        'ang_acc_local_max': ang_acc_local_max,
-        'ang_vel': ang_vel,
-        'norm_handtip_disp': norm_handtip_disp,
-        'norm_handtip_dips_gauss_filtered': min_max_norm(handtip_disp_gauss_filtered),
-        'norm_ang_acc_disp_gauss_filtered': min_max_norm(ang_acc_disp_gauss_filtered),
-        'norm_ang_acc': norm_ang_acc,
-        'norm_ang_acc_orin': min_max_norm(ang_acc_orin),
-        'norm_ang_vel': min_max_norm(ang_vel),
-    }
-    return metadata
-
 def get_timeline_zero_start(data) :
     timeline = []
     for i in range(len(data['frames'])):
@@ -80,14 +34,14 @@ def get_timeline_zero_start(data) :
     return timeline
 
 
-def get_timeline_from_frameid(data, fps=30):
+def get_timeline(joint_data, fps=30):
     timeline = []
-    for i in range(len(data['frames'])):
-        frame_time_seconds = data['frames'][i]["frame_id"] / fps
-        timeline.append(frame_time_seconds)
+    for i in range(len(joint_data['frames'])):
+        frame_time_milliseconds = (joint_data['frames'][i]["frame_id"] / fps) * 1000
+        timeline.append(frame_time_milliseconds)
 
-    time_start = timeline[0]
-    timeline = [int((time - time_start) * 1000) for time in timeline]
+    time_start = min(timeline)
+    timeline = [int(time - time_start) for time in timeline]
 
     return timeline
 
@@ -97,10 +51,10 @@ def get_handtip_joint_data(json_path, pose_type="azure_kinect"):
     jp_dict = {}
     for i in range(len(data['frames'])):
         jp_dict[i] = data['frames'][i]['bodies'][0]['joint_positions']
-        print(jp_dict[i])
+        if len(jp_dict[i]) != 33:
+            jp_dict[i] = jp_dict[i - 1]
 
     jp_list=list(jp_dict.values())
-    print(jp_list)
     jp_array=np.array(jp_list)
 
     if pose_type == "azure_kinect":
@@ -235,6 +189,7 @@ def calc_filtered_local_min(displacement_array, min_thres, minor_thres, adj_loca
     weak_cp = np.setdiff1d(displacement_local_min_minor_max_filtered, displacement_local_min_filtered, assume_unique=True)
     return displacement_local_min_filtered, weak_cp
 
+
 def find_adjacent_max_idxs(min_i, max_arr):
     for i in range(len(max_arr) - 1):
         if (max_arr[i] < min_i) and (min_i < max_arr[i + 1]):
@@ -285,7 +240,7 @@ def filter_minor_min(min_arr, max_arr, val_arr, thres, adj_local_thres, verbose=
         if (idx > 0):
             l_min = min_arr[idx - 1]
             l_val = val_arr[l_min]
-        
+
         r_min = None
         r_val = None
         if (idx < len(min_arr)-1):
@@ -368,14 +323,16 @@ def find_changepoint_aug_acc(strong_cp, weak_cp , ang_acc_local_max, ang_acc_thr
     return strong_cp, weak_cp
 
 
-def find_changepoint_velacc(velocities, accelerations, ratio=0.2):
+def find_changepoint_velacc(velocities, accelerations, ratio=0.2, vel_thres=0.0):
     velocity_min_indices = argrelmin(velocities)[0]
     acceleration_max_indices = argrelmax(accelerations)[0]
     acceleration_min_indices = argrelmin(accelerations)[0]
 
     changepoints = []
     for v_min_idx in velocity_min_indices:
-        # 가장 가까운 가속도 극대와 극소 인덱스 찾기
+        if velocities[v_min_idx] < vel_thres:
+            continue
+
         nearest_max_idx = min(filter(lambda x: x > v_min_idx, acceleration_max_indices),
                               key=lambda x: abs(x - v_min_idx), default=None)
         nearest_min_idx = min(filter(lambda x: x > v_min_idx, acceleration_min_indices),
@@ -384,18 +341,24 @@ def find_changepoint_velacc(velocities, accelerations, ratio=0.2):
         if nearest_max_idx is None or nearest_min_idx is None:
             continue
 
-        # 해당 구간의 가속도 최소값과 최대값 사이에서 ratio에 따른 가속도 값 계산
         acc_max = accelerations[nearest_max_idx]
         acc_min = accelerations[nearest_min_idx]
         target_acc_value = acc_min + (acc_max - acc_min) * ratio
 
-        # 조건 확인: 속도 최소 지점의 가속도가 target_acc_value 이상이면 changepoint로 선정
         if accelerations[v_min_idx] >= target_acc_value:
             changepoints.append(v_min_idx)
     return changepoints, []
 
-def changepoint_detector(handtip, min_thres=0.35, minor_thres=0.1, adj_local_thres=15, disp_sigma=1.0, acc_sigma=2.5, minor_max_thres=0.2, ang_acc_thres=2, pose_type="azure_kinect", fps=30):
-    handtip_gauss_filtered = scipy.ndimage.gaussian_filter1d(handtip, disp_sigma, axis=0)
+
+def find_changepoint_onlyvel(velocities):
+    changepoints = argrelmin(velocities)[0]
+
+    return changepoints, []
+
+def extract_changepoint(json_path, min_thres=0.35, minor_thres=0.1, adj_local_thres=15, disp_sigma=1.0, acc_sigma=1.0, minor_max_thres=0.2, ang_acc_thres=2, fps=30, pose_type="azure_kinect") :
+    r_handtip, l_handtip = get_handtip_joint_data(json_path)
+
+    handtip_gauss_filtered = scipy.ndimage.gaussian_filter1d(r_handtip, disp_sigma, axis=0)
     handtip_disp = np.array(calculate_displacement(handtip_gauss_filtered))
 
     handtip_vector = calculate_displacement_vector(handtip_gauss_filtered, pose_type)
@@ -405,19 +368,51 @@ def changepoint_detector(handtip, min_thres=0.35, minor_thres=0.1, adj_local_thr
     ang_acc_orin = calculate_acceleration(ang_vel[:-1], time_steps)
     ang_acc_disp_gauss_filtered = scipy.ndimage.gaussian_filter1d(ang_acc_orin, acc_sigma)
     ang_acc_local_max = argrelmax(ang_acc_disp_gauss_filtered)[0]
+    norm_handtip_disp = min_max_norm_list(list(handtip_disp))
 
-    if pose_type=="azure_kinect":
+    if pose_type == "azure_kinect":
+        norm_ang_acc = min_max_norm_list(list(ang_acc_disp_gauss_filtered))
+
         handtip_disp_gauss_filtered = scipy.ndimage.gaussian_filter1d(handtip_disp, disp_sigma)
         strong_cp, weak_cp = calc_filtered_local_min(handtip_disp_gauss_filtered, min_thres, minor_thres, adj_local_thres, minor_max_thres, False)
-        strong_cp, weak_cp = find_changepoint_aug_acc(strong_cp, weak_cp , ang_acc_local_max, ang_acc_thres)
-    elif pose_type=="blazepose":
-        handtip_disp_gauss_filtered = handtip_disp
-        strong_cp, weak_cp = find_changepoint_velacc(ang_vel, ang_acc_orin)
+        strong_cp, weak_cp = find_changepoint_aug_acc(strong_cp, weak_cp, ang_acc_local_max, ang_acc_thres)
+
+        data = open_json(json_path)
+        timeline = get_timeline_zero_start(data)
+
+        time_disp = [list(x) for x in list(zip(timeline, norm_handtip_disp, norm_ang_acc))]
     else:
         handtip_disp_gauss_filtered = handtip_disp
-        strong_cp, weak_cp = find_changepoint_velacc(ang_vel, ang_acc_orin)
+        norm_ang_acc = min_max_norm(ang_acc_orin)
 
-    norm_handtip_disp = min_max_norm_list(list(handtip_disp))
-    norm_ang_acc = min_max_norm_list(list(ang_acc_disp_gauss_filtered))
+        # strong_cp, weak_cp = find_changepoint_velacc(norm_ang_vel, norm_ang_acc)
+        strong_cp, weak_cp = find_changepoint_onlyvel(ang_vel)
+        data = open_json(json_path)
+        timeline = get_timeline(data)
 
-    return strong_cp, weak_cp, handtip_disp, handtip_disp_gauss_filtered, norm_handtip_disp, ang_acc_orin, ang_vel, ang_acc_disp_gauss_filtered, ang_acc_local_max, norm_ang_acc
+        time_disp = [list(x) for x in list(zip(timeline, ang_vel, ang_acc_orin))]
+
+    norm_handtip_disp_gauss_filtered = min_max_norm(handtip_disp_gauss_filtered)
+    norm_ang_acc_disp_gauss_filtered = min_max_norm(ang_acc_disp_gauss_filtered)
+    norm_ang_acc_orin = min_max_norm(ang_acc_orin)
+    norm_ang_vel = min_max_norm(ang_vel)
+
+    metadata = {
+        'timeline': timeline,
+        'time_disp': time_disp,
+        'strong_cp': strong_cp,
+        'weak_cp': weak_cp,
+        'handtip_disp': handtip_disp,
+        'handtip_disp_gauss_filtered': handtip_disp_gauss_filtered,
+        'ang_acc_orin': ang_acc_orin,
+        'ang_acc_disp_gauss_filtered': ang_acc_disp_gauss_filtered,
+        'ang_acc_local_max': ang_acc_local_max,
+        'ang_vel': ang_vel,
+        'norm_handtip_disp': norm_handtip_disp,
+        'norm_handtip_dips_gauss_filtered': norm_handtip_disp_gauss_filtered,
+        'norm_ang_acc': norm_ang_acc,
+        'norm_ang_acc_orin': norm_ang_acc_orin,
+        'norm_ang_acc_disp_gauss_filtered': norm_ang_acc_disp_gauss_filtered,
+        'norm_ang_vel': norm_ang_vel,
+    }
+    return metadata

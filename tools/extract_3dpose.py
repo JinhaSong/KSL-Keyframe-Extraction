@@ -62,7 +62,7 @@ if __name__ == '__main__':
 
     base_dir = "C:\\Users\\JinhaSong\\Documents\\github\\JinhaSong\\KSLKeyframeExtraction\\data\\NIKL_Korean_Sign_Language_Annotated_Corpus_2024_v1.0\\MP4, eaf\\VDMT1524021007"
     video_dir = os.path.join(base_dir, 'MKV')
-    video_ext = ".mkv"
+    video_ext = ".mp4"
     output_dir = os.path.join(base_dir, 'SKELETON_BLAZEPOSE')
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
